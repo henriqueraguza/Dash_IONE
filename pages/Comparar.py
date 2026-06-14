@@ -3,7 +3,7 @@ import streamlit as st
 import plotly.express as px
 from scipy import stats
 
-st.title("Comparação de Médias")
+st.title("Comparação de CABEÇULINHAS")
 
 graduacao = pd.read_excel("Dados.xlsx", sheet_name="Graduacao")
 
