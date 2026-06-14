@@ -1,6 +1,7 @@
 import pandas as pd
 import streamlit as st
 import plotly.express as px
+from scipy import stats
 
 st.title("Comparação de Médias")
 
@@ -265,3 +266,110 @@ fig_geral.update_layout(
 )
 
 st.plotly_chart(fig_geral, use_container_width=True)
+
+# =========================
+# TESTE T DE DIFERENÇA DE MÉDIAS - WELCH
+# =========================
+
+st.divider()
+st.subheader("Teste t de diferença de médias")
+
+grupo_sim = medias_alunos.loc[
+    medias_alunos["Insper One"] == "Sim",
+    "Média Graduação"
+].dropna()
+
+grupo_nao = medias_alunos.loc[
+    medias_alunos["Insper One"] == "Não",
+    "Média Graduação"
+].dropna()
+
+if len(grupo_sim) < 2 or len(grupo_nao) < 2:
+    st.warning("Não há observações suficientes nos dois grupos para realizar o teste.")
+else:
+    media_sim = grupo_sim.mean()
+    media_nao = grupo_nao.mean()
+
+    var_sim = grupo_sim.var(ddof=1)
+    var_nao = grupo_nao.var(ddof=1)
+
+    n_sim = len(grupo_sim)
+    n_nao = len(grupo_nao)
+
+    diferenca = media_sim - media_nao
+
+    # Erro-padrão robusto a variâncias diferentes
+    erro_padrao = ((var_sim / n_sim) + (var_nao / n_nao)) ** 0.5
+
+    t_stat = diferenca / erro_padrao
+
+    # Graus de liberdade de Welch-Satterthwaite
+    gl_welch = (
+        (var_sim / n_sim + var_nao / n_nao) ** 2
+        /
+        (
+            ((var_sim / n_sim) ** 2) / (n_sim - 1)
+            +
+            ((var_nao / n_nao) ** 2) / (n_nao - 1)
+        )
+    )
+
+    # Teste unilateral: H1: média IONE > média sem IONE
+    p_valor = stats.t.sf(t_stat, df=gl_welch)
+
+    resultado_teste = pd.DataFrame({
+        "Estatística": [
+            "Média Insper One",
+            "Média sem Insper One",
+            "Diferença de médias",
+            "Variância Insper One",
+            "Variância sem Insper One",
+            "Erro-padrão",
+            "Estatística t",
+            "Graus de liberdade Welch",
+            "p-valor unilateral",
+            "N Insper One",
+            "N sem Insper One"
+        ],
+        "Valor": [
+            media_sim,
+            media_nao,
+            diferenca,
+            var_sim,
+            var_nao,
+            erro_padrao,
+            t_stat,
+            gl_welch,
+            p_valor,
+            n_sim,
+            n_nao
+        ]
+    })
+
+    st.markdown(
+        """
+        **Hipóteses do teste**
+
+        H₀: média dos alunos Insper One − média dos alunos sem Insper One = 0
+
+        H₁: média dos alunos Insper One − média dos alunos sem Insper One > 0
+        """
+    )
+
+    st.dataframe(
+        resultado_teste.round(4),
+        use_container_width=True,hide_index=True
+    )
+
+    alpha = 0.05
+
+    if p_valor < alpha:
+        st.success(
+            f"Como o p-valor unilateral é {p_valor:.4f}, rejeitamos H₀ ao nível de 5%. "
+            "Há evidência estatística de que a média dos alunos Insper One é maior."
+        )
+    else:
+        st.info(
+            f"Como o p-valor unilateral é {p_valor:.4f}, não rejeitamos H₀ ao nível de 5%. "
+            "Não há evidência estatística suficiente de que a média dos alunos Insper One seja maior."
+        )
