@@ -326,7 +326,6 @@ else:
             "Variância sem Insper One",
             "Erro-padrão",
             "Estatística t",
-            "Graus de liberdade Welch",
             "p-valor unilateral",
             "N Insper One",
             "N sem Insper One"
@@ -339,7 +338,6 @@ else:
             var_nao,
             erro_padrao,
             t_stat,
-            gl_welch,
             p_valor,
             n_sim,
             n_nao
